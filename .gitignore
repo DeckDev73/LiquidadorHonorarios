@@ -1,0 +1,25 @@
+# ⚙️ Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# 🐍 Entorno Virtual
+venv/
+ENV/
+env/
+.venv/
+
+# 📥 Archivos de usuario subidos o generados
+uploads/
+outputs/
+*.pkl
+*.xlsx
+
+# 📂 IDEs y editores
+.vscode/
+.idea/
+
+# 🖥️ Archivos del sistema operativo
+.DS_Store
+Thumbs.db
