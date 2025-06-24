@@ -1,0 +1,19 @@
+<h2> Ingreso manual de UVR</h2>
+
+{% if codigos_faltantes %}
+  <form method="POST" action="/asignar_uvr">
+    <label for="codigos[]">Selecciona uno o más Códigos Homologados:</label><br>
+    <select name="codigos[]" id="codigos[]" multiple>
+      {% for codigo in codigos_faltantes %}
+        <option value="{{ codigo  }}">{{ codigo }}</option>
+      {% endfor %}
+    </select><br><br>
+
+    <label for="uvr">Valor UVR a asignar:</label><br>
+    <input type="number" name="valor_uvr" id="valor_uvr" min="1" required><br><br>
+
+    <button type="submit"  value="asignar_uvr">Asignar UVR</button>
+  </form>
+{% else %}
+  <p> Todos los códigos ya tienen UVR asignada.</p>
+{% endif %}
