@@ -5,31 +5,38 @@
     <title>Liquidador de Honorarios</title>
 </head>
 <body>
-    <h1>📊 Plataforma de Liquidación</h1>
+  
 
-    <!-- Subir archivo -->
+{% include "partials/carga.html" %}
+{% include "partials/uvr.html" %}
+
+
+
+
+
+<!-- 
+    Subir archivo
     <form action="/upload" method="post" enctype="multipart/form-data">
         <label for="archivo">Subir archivo Excel:</label>
         <input type="file" name="archivo" required>
         <button type="submit">Cargar</button>
     </form>
 
-    <!-- Asignar UVR -->
-    <form action="/asignar_uvr" method="post">
+     <form action="/asignar_uvr" method="post">
         <p>Asignar UVR a códigos manualmente:</p>
         <input type="text" name="codigos[]" placeholder="Código 1">
         <input type="number" name="valor_uvr" placeholder="Valor UVR">
         <button type="submit">Asignar UVR</button>
     </form>
 
-    <!-- Unificar especialidades -->
+    <!- Unificar especialidades 
     <form action="/unificar_especialidades" method="post">
         <p>Unificar especialidades (ejemplo):</p>
         <input type="text" name="especialidad_GALLEGO DUQUE JORGE ALEJANDRO " value="ANESTESIOLOGIA">
         <button type="submit">Unificar</button>
     </form>
 
-    <!-- Liquidar -->
+    <! Liquidar 
     <form action="/liquidar" method="post">
         <p>Liquidar profesional:</p>
         <input type="text" name="profesional" placeholder="Nombre profesional">
@@ -40,7 +47,7 @@
         <button type="submit">Liquidar</button>
     </form>
 
-    <p><a href="/descargar">📦 Descargar resultados</a></p>
+    <p><a href="/descargar">📦 Descargar resultados</a></p> -->
 
 </body>
 </html>

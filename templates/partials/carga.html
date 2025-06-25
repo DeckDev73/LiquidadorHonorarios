@@ -74,18 +74,46 @@
 <body>
 
 <form method="POST" action="/upload" enctype="multipart/form-data" class="upload-form">
-  <div class="dropzone">
-    <label for="archivo">
-      <div class="dropzone-text">
-        <p> Arrastra y suelta tu archivo aquí</p>
-        <small>O haz clic para seleccionarlo (.xlsx)</small>
+  <div class="dropzone" id="dropzone">
+    <label for="archivo" style="display: block; cursor: pointer;">
+
+      
+      <div class="dropzone-text" id="dropzone-text">
+        <p>📂 Arrastra y suelta tu archivo aquí</p>
+        <small>Limit 200MB por archivo • XLSX</small>
       </div>
+
+     
+      <div id="archivo-preview" style="display: none; align-items: center; justify-content: center; gap: 12px; padding: 10px 0;">
+        <img src="/static/img/excel-icon.png" alt="Excel" style="width: 36px;">
+        <span id="archivo-nombre" style="font-size: 1rem; font-weight: 500; color: #0f0;"></span>
+      </div>
+
       <input type="file" name="archivo" id="archivo" accept=".xlsx" required>
     </label>
   </div>
 
   <button type="submit" class="submit-btn">Subir archivo</button>
 </form>
+
+
+<script>
+  const input = document.getElementById('archivo');
+  const preview = document.getElementById('archivo-preview');
+  const dropText = document.getElementById('dropzone-text');
+  const nombreSpan = document.getElementById('archivo-nombre');
+
+  input.addEventListener('change', () => {
+    if (input.files.length > 0) {
+      const file = input.files[0];
+      nombreSpan.textContent = file.name;
+      dropText.style.display = 'none';
+      preview.style.display = 'block';
+    }
+  });
+</script>
+
+
 
 </body>
 </html>
