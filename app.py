@@ -19,7 +19,6 @@ STATE = {
     'especialidades_seleccionadas': {},
 }
 
-
 @app.route('/', methods=['GET'])
 def index():
     if STATE['df'] is None:
@@ -31,14 +30,21 @@ def index():
 
     df = STATE['df']
 
+    # ✅ CAMBIO 1: Usar dict con especialistas y especialidades
+    profesionales = controller.profesionales_con_multiples_especialidades(df) if df is not None else {}
+
+    # ✅ CAMBIO 2: Generar especialidades seleccionadas por defecto
+    seleccionadas = STATE.get('especialidades_seleccionadas', {
+        k: v[0] for k, v in profesionales.items()
+    })
+
     return render_template('main.html',
                            archivo_nombre=STATE['archivo_nombre'],
                            codigos_faltantes=controller.detectar_codigos_pendientes(df) if df is not None else [],
-                           profesionales=list(df['Especialista'].dropna().unique()) if df is not None else [],
+                           profesionales=profesionales,  # ✅ dict para usar en .items()
+                           seleccionadas=seleccionadas,  # ✅ requerido en el template
                            resumen=None,
                            df_preview=None)
-
-
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -65,8 +71,6 @@ def upload_file():
     flash("✅ Archivo cargado correctamente.")
     return redirect(url_for('index'))
 
-
-
 @app.route('/asignar_uvr', methods=['POST'])
 def asignar_uvr():
     codigos = request.form.getlist('codigos[]') or []
@@ -87,15 +91,11 @@ def asignar_uvr():
         print("⚠️ UVR no es número válido")
         return redirect(url_for('index'))
 
-    # Confirmar antes de aplicar
     print("✅ Aplicando UVR...")
     STATE['df'] = controller.procesar_uvr_manual(STATE['df'], codigos, valor_uvr)
     controller.guardar_estado(STATE['df'], STATE['archivo_nombre'])
     flash(f"✅ UVR {valor_uvr} asignada a {len(codigos)} código(s).")
     return redirect(url_for('index'))
-
-
-
 
 @app.route('/unificar_especialidades', methods=['POST'])
 def unificar_especialidades():
@@ -105,7 +105,6 @@ def unificar_especialidades():
     controller.guardar_estado(STATE['df'], STATE['archivo_nombre'])
     flash("Especialidades unificadas.")
     return redirect(url_for('index'))
-
 
 @app.route('/liquidar', methods=['POST'])
 def liquidar():
@@ -135,7 +134,6 @@ def liquidar():
                            resumen=resumen,
                            df_preview=df_preview)
 
-
 @app.route('/descargar', methods=['GET'])
 def descargar():
     df = STATE['df']
@@ -149,7 +147,6 @@ def descargar():
     output.seek(0)
 
     return send_file(output, as_attachment=True, download_name="liquidacion.xlsx")
-
 
 if __name__ == '__main__':
     app.run(debug=True)

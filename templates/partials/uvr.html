@@ -3,7 +3,7 @@
 {% if codigos_faltantes %}
   <form method="POST" action="/asignar_uvr">
     <label for="codigos[]">Selecciona uno o más Códigos Homologados:</label><br>
-    <select name="codigos[]" id="codigos[]" multiple>
+    <select name="codigos[]" id="codigos[]" multiple required>
       {% for codigo in codigos_faltantes %}
         <option value="{{ codigo  }}">{{ codigo }}</option>
       {% endfor %}

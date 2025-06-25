@@ -1,0 +1,56 @@
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Unificación de Especialidades</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    h1 { color: #2c3e50; }
+    .prof-block { margin-bottom: 20px; }
+    label { font-weight: bold; display: block; margin-bottom: 5px; }
+    select, button {
+      padding: 8px;
+      font-size: 14px;
+      width: 300px;
+    }
+    button {
+      margin-top: 20px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔀 Unificación de Especialidades por Profesional</h1>
+
+  {% if profesionales and profesionales[0] is string %}
+    <p>No hay profesionales con múltiples especialidades para unificar.</p>
+  {% else %}
+    <form method="POST" action="/unificar_especialidades">
+      {% for profesional, especialidades in profesionales.items() %}
+        <div class="prof-block">
+          <label for="especialidad_{{ profesional }}">{{ profesional }}</label>
+          <select name="especialidad_{{ profesional }}" id="especialidad_{{ profesional }}">
+            {% for esp in especialidades %}
+              <option value="{{ esp }}"
+                {% if seleccionadas.get(profesional) == esp %}selected{% endif %}>
+                {{ esp }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endfor %}
+      <button type="submit">💾 Aplicar Cambios</button>
+    </form>
+  {% endif %}
+</body>
+</html>
+
+</html>
