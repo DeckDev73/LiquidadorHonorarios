@@ -6,10 +6,12 @@
 </head>
 <body>
   
-
-{% include "partials/carga.html" %}
+<div style="display: flex; flex-direction: column; gap: 30px;">
+{% include "partials/carga.html" %}<br>
 {% include "partials/uvr.html" %}<br>
 {% include "partials/especialidades.html" %}
+{% include "partials/especialistas.html" %}
+</div>
 
 {% with messages = get_flashed_messages() %}
     {% if messages %}
