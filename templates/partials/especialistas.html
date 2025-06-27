@@ -1,11 +1,34 @@
-  <h2>Selecciona el especialista a liquidar</h2>
-    <form method="POST" action="/">
-        <label for="especialista">Especialista:</label>
-        <select name="especialista" id="especialista" required>
-            {% for prof in especialistas %}
-                <option value="{{ prof }}" {% if prof == seleccionado %}selected{% endif %}>{{ prof }}</option>
-            {% endfor %}
-        </select>
-        <br><br>
-        <input type="submit" value="Liquidar">
-    </form>
+<h2>Selecciona el especialista a liquidar</h2>
+
+<label for="especialista">Especialista:</label>
+<select name="especialista" id="especialista" required>
+    {% for prof in especialistas %}
+        <option value="{{ prof }}" {% if prof == seleccionado %}selected{% endif %}>{{ prof }}</option>
+    {% endfor %}
+</select>
+
+<div id="tabla-especialista">
+    <!-- Aquí se insertará la tabla del especialista con JS -->
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const selector = document.getElementById('especialista');
+    selector.addEventListener('change', function () {
+      const especialista = this.value;
+
+      // Enviar solicitud al backend para obtener la tabla del especialista
+      fetch(`/tabla_especialista/${especialista}`)
+        .then(response => response.text())
+        .then(html => {
+          document.getElementById('tabla-especialista').innerHTML = html;
+        })
+        .catch(error => {
+          console.error('Error al obtener la tabla:', error);
+        });
+    });
+
+    // Disparar la carga inicial por defecto
+    selector.dispatchEvent(new Event('change'));
+  });
+</script>
