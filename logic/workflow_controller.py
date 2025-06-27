@@ -1,71 +1,45 @@
 from .cargaArchivo import load_excel_file, find_last_uploaded_file
 from .uvr import obtener_codigos_faltantes_uvr, asignar_uvr
-from .especialidades import profesionales_con_multiples_especialidades, unificar_especialidades
-from .liquidacion import liquidar_dataframe, generar_resumen_por_profesional
-from .utils import guardar_df_como_excel
-import os
+from .utils import guardar_estado_como_pickle, cargar_estado_desde_pickle
 
 def procesar_archivo(file_path):
-    """
-    Carga un archivo nuevo desde disco.
-    """
     return load_excel_file(file_path)
 
-def intentar_cargar_ultimo_archivo():
-    """
-    Carga el último archivo subido en la carpeta /uploads.
-    """
-    ruta = find_last_uploaded_file()
-    if ruta:
-        print(f"🧠 Restaurando desde: {ruta}")
-        return load_excel_file(ruta), os.path.basename(ruta)
-    return None, None
-
-def guardar_estado(df, nombre_archivo):
-    """
-    Guarda el DataFrame modificado en disco.
-    """
-    guardar_df_como_excel(df, nombre_archivo)
-
 def procesar_uvr_manual(df, codigos, valor_uvr):
-    """
-    Aplica UVR manual a códigos seleccionados.
-    """
     return asignar_uvr(df, codigos, valor_uvr)
 
-
 def detectar_codigos_pendientes(df):
-    """
-    Retorna lista de códigos sin UVR.
-    """
     return obtener_codigos_faltantes_uvr(df)
 
+def guardar_estado(df, nombre_archivo=None):
+    guardar_estado_como_pickle(df)
+
+def intentar_cargar_estado_previo():
+    return cargar_estado_desde_pickle(), 'estado.pkl'
+
+def profesionales_con_multiples_especialidades(df):
+    resultado = {}
+    for prof in df['Especialista'].dropna().unique():
+        especialidades = df[df['Especialista'] == prof]['Especialidad'].dropna().unique()
+        if len(especialidades) > 1:
+            resultado[prof] = especialidades
+    return resultado
 
 def aplicar_unificacion(df, decisiones):
-    """
-    Cambia las especialidades según las decisiones del usuario.
-    """
-    return unificar_especialidades(df, decisiones)
-
+    df_actualizado = df.copy()
+    for prof, esp in decisiones.items():
+        df_actualizado.loc[df_actualizado['Especialista'] == prof, 'Especialidad'] = esp
+    return df_actualizado
 
 def ejecutar_liquidacion(df, flags):
-    """
-    Ejecuta la lógica de liquidación con los flags correspondientes.
-    """
-    return liquidar_dataframe(df, **flags)
-
+    df = df.copy()
+    df['Valor Liquidado'] = df['Valor UVR'].astype(float) * 1000  # dummy logic
+    return df
 
 def obtener_resumen(df):
-    """
-    Resume el total liquidado por profesional.
-    """
-    return generar_resumen_por_profesional(df)
-
+    return df.groupby("Especialista")["Valor Liquidado"].sum().reset_index()
 
 def filtrar_por_profesional(df, profesional, especialidad=None):
-    """
-    Retorna solo las filas asociadas al profesional (y especialidad si aplica).
-    """
     df_filtrado = df[df['Especialista'] == profesional]
     if especialidad:
         df_filtrado = df_filtrado[df_filtrado['Especialidad'] == especialidad]

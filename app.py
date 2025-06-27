@@ -22,27 +22,21 @@ STATE = {
 @app.route('/', methods=['GET'])
 def index():
     if STATE['df'] is None:
-        df, nombre = controller.intentar_cargar_ultimo_archivo()
+        df, nombre = controller.intentar_cargar_estado_previo()
         if df is not None:
             STATE['df'] = df
             STATE['archivo_nombre'] = nombre
-            flash(f"🧠 Archivo restaurado automáticamente: {nombre}")
+            flash(f"🧠 Estado restaurado automáticamente: {nombre}")
 
     df = STATE['df']
-
-    # ✅ CAMBIO 1: Usar dict con especialistas y especialidades
     profesionales = controller.profesionales_con_multiples_especialidades(df) if df is not None else {}
-
-    # ✅ CAMBIO 2: Generar especialidades seleccionadas por defecto
-    seleccionadas = STATE.get('especialidades_seleccionadas', {
-        k: v[0] for k, v in profesionales.items()
-    })
+    seleccionadas = STATE.get('especialidades_seleccionadas', {k: v[0] for k, v in profesionales.items()})
 
     return render_template('main.html',
                            archivo_nombre=STATE['archivo_nombre'],
                            codigos_faltantes=controller.detectar_codigos_pendientes(df) if df is not None else [],
-                           profesionales=profesionales,  # ✅ dict para usar en .items()
-                           seleccionadas=seleccionadas,  # ✅ requerido en el template
+                           profesionales=profesionales,
+                           seleccionadas=seleccionadas,
                            resumen=None,
                            df_preview=None)
 
@@ -63,11 +57,9 @@ def upload_file():
         flash(str(e))
         return redirect(url_for('index'))
 
-    # ✅ Guardar backup automáticamente
-    df.to_excel(os.path.join(app.config['UPLOAD_FOLDER'], 'backup.xlsx'), index=False)
-
     STATE['df'] = df
     STATE['archivo_nombre'] = filename
+    controller.guardar_estado(df)
     flash("✅ Archivo cargado correctamente.")
     return redirect(url_for('index'))
 
@@ -76,24 +68,18 @@ def asignar_uvr():
     codigos = request.form.getlist('codigos[]') or []
     valor_uvr = request.form.get('valor_uvr')
 
-    print("📥 CODIGOS RECIBIDOS:", codigos)
-    print("📥 UVR INGRESADO:", valor_uvr)
-
     if not codigos:
         flash("❌ Debes seleccionar al menos un código.")
-        print("⚠️ No se seleccionaron códigos")
         return redirect(url_for('index'))
 
     try:
         valor_uvr = float(valor_uvr)
     except (ValueError, TypeError):
         flash("❌ Valor UVR inválido.")
-        print("⚠️ UVR no es número válido")
         return redirect(url_for('index'))
 
-    print("✅ Aplicando UVR...")
     STATE['df'] = controller.procesar_uvr_manual(STATE['df'], codigos, valor_uvr)
-    controller.guardar_estado(STATE['df'], STATE['archivo_nombre'])
+    controller.guardar_estado(STATE['df'])
     flash(f"✅ UVR {valor_uvr} asignada a {len(codigos)} código(s).")
     return redirect(url_for('index'))
 
@@ -102,8 +88,8 @@ def unificar_especialidades():
     decisiones = {k.replace("especialidad_", ""): v for k, v in request.form.items() if k.startswith("especialidad_")}
     STATE['df'] = controller.aplicar_unificacion(STATE['df'], decisiones)
     STATE['especialidades_seleccionadas'] = decisiones
-    controller.guardar_estado(STATE['df'], STATE['archivo_nombre'])
-    flash("Especialidades unificadas.")
+    controller.guardar_estado(STATE['df'])
+    flash("✅ Especialidades unificadas.")
     return redirect(url_for('index'))
 
 @app.route('/liquidar', methods=['POST'])
@@ -117,7 +103,7 @@ def liquidar():
     }
 
     STATE['df'] = controller.ejecutar_liquidacion(STATE['df'], flags)
-    controller.guardar_estado(STATE['df'], STATE['archivo_nombre'])
+    controller.guardar_estado(STATE['df'])
 
     df_preview = controller.filtrar_por_profesional(
         STATE['df'],
@@ -145,7 +131,6 @@ def descargar():
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False)
     output.seek(0)
-
     return send_file(output, as_attachment=True, download_name="liquidacion.xlsx")
 
 if __name__ == '__main__':

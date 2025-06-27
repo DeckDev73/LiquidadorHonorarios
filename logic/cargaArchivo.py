@@ -14,21 +14,14 @@ def load_excel_file(file_path: str) -> pd.DataFrame:
     return df
 
 def find_last_uploaded_file(upload_dir='uploads') -> str | None:
-    """
-    Busca el archivo Excel más recientemente modificado en la carpeta de uploads.
-    """
     if not os.path.exists(upload_dir):
         return None
-
     excel_files = [
         os.path.join(upload_dir, f)
         for f in os.listdir(upload_dir)
         if f.lower().endswith('.xlsx')
     ]
-
     if not excel_files:
         return None
-
-    # Ordenar por fecha de modificación descendente
     latest_file = max(excel_files, key=os.path.getmtime)
     return latest_file
