@@ -20,3 +20,14 @@ def unificar_especialidades(df: pd.DataFrame, decisiones_usuario: dict) -> pd.Da
         mask = (df_actualizado['Especialista'] == prof)
         df_actualizado.loc[mask, 'Especialidad'] = especialidad_final
     return df_actualizado
+
+def obtener_tabla_detalle(df: pd.DataFrame, profesional: str, especialidad: str) -> pd.DataFrame:
+    """
+    Retorna un sub-DataFrame con columnas clave para un especialista + especialidad.
+    """
+    filtro = (df['Especialista'] == profesional)
+    if especialidad:
+        filtro &= (df['Especialidad'] == especialidad)
+
+    columnas = ['Especialidad', 'Valor UVR', 'Valor Total']
+    return df.loc[filtro, columnas].copy()

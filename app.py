@@ -84,13 +84,26 @@ def asignar_uvr():
     return redirect(url_for('index'))
 
 @app.route('/unificar_especialidades', methods=['POST'])
-def unificar_especialidades():
+def aplicar_unificacion_especialidades():
     decisiones = {k.replace("especialidad_", ""): v for k, v in request.form.items() if k.startswith("especialidad_")}
-    STATE['df'] = controller.aplicar_unificacion(STATE['df'], decisiones)
+    STATE['df'] = controller.aplicar_unificacion_especialidades(STATE['df'], decisiones)
     STATE['especialidades_seleccionadas'] = decisiones
     controller.guardar_estado(STATE['df'])
     flash("✅ Especialidades unificadas.")
     return redirect(url_for('index'))
+
+@app.route('/tabla_especialista', methods=['GET'])
+def obtener_tabla_especialista():
+    profesional = request.args.get('profesional')
+    especialidad = request.args.get('especialidad')
+
+    if not profesional or not especialidad:
+        return "<p>❌ Faltan datos para mostrar la tabla.</p>"
+
+    df_detalle = controller.obtener_tabla_especialista(STATE['df'], profesional, especialidad)
+    return render_template('partials/tabla_detalle.html', df=df_detalle)
+
+
 
 @app.route('/liquidar', methods=['POST'])
 def liquidar():

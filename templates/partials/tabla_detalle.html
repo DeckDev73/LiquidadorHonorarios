@@ -1,0 +1,22 @@
+{% if df is not none and not df.empty %}
+  <table class="tabla-detalle">
+    <thead>
+      <tr>
+        {% for col in df.columns %}
+          <th>{{ col }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in df.iterrows() %}
+        <tr>
+          {% for col in df.columns %}
+            <td>{{ row[1][col] }}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="sin-datos">⚠️ No hay datos disponibles para este especialista y especialidad.</p>
+{% endif %}
