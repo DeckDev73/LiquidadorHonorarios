@@ -4,7 +4,12 @@ import os
 from io import BytesIO
 import pandas as pd
 
-from logic import workflow_controller as controller
+from logic.cargaArchivo import load_excel_file
+from logic.uvr import obtener_codigos_faltantes_uvr, asignar_uvr
+from logic.especialidades import obtener_profesionales_y_especialidades
+from logic.liquidacion import liquidar_dataframe, generar_resumen_por_profesional
+
+from logic.utils import guardar_estado_como_pickle, cargar_estado_desde_pickle
 
 app = Flask(__name__)
 app.secret_key = 'super-secret-key'
@@ -22,19 +27,19 @@ STATE = {
 @app.route('/', methods=['GET'])
 def index():
     if STATE['df'] is None:
-        df, nombre = controller.intentar_cargar_estado_previo()
+        df = cargar_estado_desde_pickle()
         if df is not None:
             STATE['df'] = df
-            STATE['archivo_nombre'] = nombre
-            flash(f"🧠 Estado restaurado automáticamente: {nombre}")
+            STATE['archivo_nombre'] = 'estado.pkl'
+            flash(f"🧠 Estado restaurado automáticamente: estado.pkl")
 
     df = STATE['df']
-    profesionales = controller.profesionales_con_multiples_especialidades(df) if df is not None else {}
-    seleccionadas = STATE.get('especialidades_seleccionadas', {k: v[0] for k, v in profesionales.items()})
+    profesionales = obtener_profesionales_y_especialidades(df) if df is not None else {}
+    seleccionadas = {k: v[0] for k, v in profesionales.items()}
 
     return render_template('main.html',
                            archivo_nombre=STATE['archivo_nombre'],
-                           codigos_faltantes=controller.detectar_codigos_pendientes(df) if df is not None else [],
+                           codigos_faltantes=obtener_codigos_faltantes_uvr(df) if df is not None else [],
                            profesionales=profesionales,
                            seleccionadas=seleccionadas,
                            resumen=None,
@@ -52,19 +57,19 @@ def upload_file():
     file.save(path)
 
     try:
-        df = controller.procesar_archivo(path)
+        df = load_excel_file(path)
     except ValueError as e:
         flash(str(e))
         return redirect(url_for('index'))
 
     STATE['df'] = df
     STATE['archivo_nombre'] = filename
-    controller.guardar_estado(df)
+    guardar_estado_como_pickle(df)
     flash("✅ Archivo cargado correctamente.")
     return redirect(url_for('index'))
 
 @app.route('/asignar_uvr', methods=['POST'])
-def asignar_uvr():
+def asignar_uvr_route():
     codigos = request.form.getlist('codigos[]') or []
     valor_uvr = request.form.get('valor_uvr')
 
@@ -78,18 +83,9 @@ def asignar_uvr():
         flash("❌ Valor UVR inválido.")
         return redirect(url_for('index'))
 
-    STATE['df'] = controller.procesar_uvr_manual(STATE['df'], codigos, valor_uvr)
-    controller.guardar_estado(STATE['df'])
+    STATE['df'] = asignar_uvr(STATE['df'], codigos, valor_uvr)
+    guardar_estado_como_pickle(STATE['df'])
     flash(f"✅ UVR {valor_uvr} asignada a {len(codigos)} código(s).")
-    return redirect(url_for('index'))
-
-@app.route('/unificar_especialidades', methods=['POST'])
-def aplicar_unificacion_especialidades():
-    decisiones = {k.replace("especialidad_", ""): v for k, v in request.form.items() if k.startswith("especialidad_")}
-    STATE['df'] = controller.aplicar_unificacion_especialidades(STATE['df'], decisiones)
-    STATE['especialidades_seleccionadas'] = decisiones
-    controller.guardar_estado(STATE['df'])
-    flash("✅ Especialidades unificadas.")
     return redirect(url_for('index'))
 
 @app.route('/tabla_especialista', methods=['GET'])
@@ -100,8 +96,26 @@ def obtener_tabla_especialista():
     if not profesional or not especialidad:
         return "<p>❌ Faltan datos para mostrar la tabla.</p>"
 
-    df_detalle = controller.obtener_tabla_especialista(STATE['df'], profesional, especialidad)
-    return render_template('partials/tabla_detalle.html', df=df_detalle)
+    df = STATE['df']
+    columnas = ["Codigo Homologado", "Especialidad", "Valor UVR", "Valor Total"]
+
+    df_filtrado = df[(df['Especialista'] == profesional) & (df['Especialidad'] == especialidad)]
+
+    if df_filtrado.empty:
+        return "<p>⚠️ No hay datos disponibles para este especialista y especialidad.</p>"
+
+    df_final = df_filtrado[columnas].copy()
+
+    # ✅ Formateo
+    df_final['Codigo Homologado'] = df_final['Codigo Homologado'].astype(str).str.extract(r'(\d+)')
+    df_final['Valor UVR'] = df_final['Valor UVR'].apply(lambda x: int(x) if pd.notna(x) and float(x).is_integer() else x)
+    df_final['Valor Total'] = df_final['Valor Total'].apply(lambda x: f"${x:,.0f}" if pd.notna(x) else '')
+
+    data = df_final.to_dict(orient='records')
+
+    return render_template('partials/tabla_detalle.html', columnas=columnas, data=data)
+
+
 
 
 
@@ -115,21 +129,16 @@ def liquidar():
         'check_pie': 'check_pie' in request.form
     }
 
-    STATE['df'] = controller.ejecutar_liquidacion(STATE['df'], flags)
-    controller.guardar_estado(STATE['df'])
+    STATE['df'] = liquidar_dataframe(STATE['df'], **flags)
+    guardar_estado_como_pickle(STATE['df'])
 
-    df_preview = controller.filtrar_por_profesional(
-        STATE['df'],
-        profesional,
-        STATE['especialidades_seleccionadas'].get(profesional)
-    )
-
-    resumen = controller.obtener_resumen(STATE['df'])
+    df_preview = STATE['df'][(STATE['df']['Especialista'] == profesional)]
+    resumen = generar_resumen_por_profesional(STATE['df'])
 
     return render_template('main.html',
                            archivo_nombre=STATE['archivo_nombre'],
-                           codigos_faltantes=controller.detectar_codigos_pendientes(STATE['df']),
-                           profesionales=list(STATE['df']['Especialista'].dropna().unique()),
+                           codigos_faltantes=obtener_codigos_faltantes_uvr(STATE['df']),
+                           profesionales=obtener_profesionales_y_especialidades(STATE['df']),
                            resumen=resumen,
                            df_preview=df_preview)
 

@@ -3,44 +3,21 @@
 <label for="especialista">Especialista:</label>
 <select name="profesional" id="especialista" required>
   {% for prof in profesionales %}
-    <option value="{{ prof }}">{{ prof }}</option>
+    <option value="{{ prof }}" {% if loop.first %}selected{% endif %}>{{ prof }}</option>
   {% endfor %}
 </select>
 
-<label for="especialidad">Especialidad:</label>
-<select name="especialidad" id="especialidad" required>
-  {% for prof, esp_list in profesionales.items() %}
-    {% for esp in esp_list %}
-      <option value="{{ esp }}">{{ esp }}</option>
-    {% endfor %}
-  {% endfor %}
-</select>
+<div id="especialidad-container" style="display: none;">
+  <label for="especialidad">Especialidad:</label>
+  <select name="especialidad" id="especialidad" required></select>
+</div>
 
 <div id="tabla-especialista"></div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const especialistaSelect = document.getElementById('especialista');
-    const especialidadSelect = document.getElementById('especialidad');
-
-    function cargarTabla() {
-      const profesional = especialistaSelect.value;
-      const especialidad = especialidadSelect.value;
-
-      const url = `/tabla_especialista?profesional=${encodeURIComponent(profesional)}&especialidad=${encodeURIComponent(especialidad)}`;
-
-      fetch(url)
-        .then(response => response.text())
-        .then(html => {
-          document.getElementById('tabla-especialista').innerHTML = html;
-        })
-        .catch(error => {
-          console.error('Error al cargar la tabla:', error);
-        });
-    }
-
-    especialistaSelect.addEventListener('change', cargarTabla);
-    especialidadSelect.addEventListener('change', cargarTabla);
-    cargarTabla();  // Cargar al inicio
-  });
+<!-- Este script inyecta los datos directamente en el archivo JS -->
+<script id="data-especialistas" type="application/json">
+  {{ profesionales | tojson | safe }}
 </script>
+
+<!-- Cargar script JS externo -->
+<script src="{{ url_for('static', filename='js/especialistas.js') }}"></script>

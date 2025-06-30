@@ -12,16 +12,3 @@ def load_excel_file(file_path: str) -> pd.DataFrame:
         if col not in df.columns:
             df[col] = 0 if col == 'Valor UVR' else ''
     return df
-
-def find_last_uploaded_file(upload_dir='uploads') -> str | None:
-    if not os.path.exists(upload_dir):
-        return None
-    excel_files = [
-        os.path.join(upload_dir, f)
-        for f in os.listdir(upload_dir)
-        if f.lower().endswith('.xlsx')
-    ]
-    if not excel_files:
-        return None
-    latest_file = max(excel_files, key=os.path.getmtime)
-    return latest_file

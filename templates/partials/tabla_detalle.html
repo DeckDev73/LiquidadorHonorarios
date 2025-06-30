@@ -1,17 +1,17 @@
-{% if df is not none and not df.empty %}
+{% if data %}
   <table class="tabla-detalle">
     <thead>
       <tr>
-        {% for col in df.columns %}
+        {% for col in columnas %}
           <th>{{ col }}</th>
         {% endfor %}
       </tr>
     </thead>
     <tbody>
-      {% for row in df.iterrows() %}
+      {% for row in data %}
         <tr>
-          {% for col in df.columns %}
-            <td>{{ row[1][col] }}</td>
+          {% for col in columnas %}
+            <td>{{ row[col] }}</td>
           {% endfor %}
         </tr>
       {% endfor %}
