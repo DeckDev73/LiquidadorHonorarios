@@ -10,3 +10,14 @@ def cargar_estado_desde_pickle(path='uploads/estado.pkl') -> pd.DataFrame | None
         print(f"🧠 Cargando estado desde {path}")
         return pd.read_pickle(path)
     return None
+
+def limpiar_archivos_anteriores(upload_folder='uploads', estado_path='uploads/estado.pkl'):
+    # Elimina todos los archivos en la carpeta de uploads
+    for archivo in os.listdir(upload_folder):
+        archivo_path = os.path.join(upload_folder, archivo)
+        if os.path.isfile(archivo_path):
+            os.remove(archivo_path)
+
+    # Elimina estado.pkl si existe
+    if os.path.exists(estado_path):
+        os.remove(estado_path)

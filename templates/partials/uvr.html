@@ -5,7 +5,7 @@
     <label for="codigos[]">Selecciona uno o más Códigos Homologados:</label><br>
     <select name="codigos[]" id="codigos[]" multiple required>
       {% for codigo in codigos_faltantes %}
-        <option value="{{ codigo  }}">{{ codigo }}</option>
+        <option value="{{ codigo }}">{{ codigo|int }}</option>
       {% endfor %}
     </select><br><br>
 

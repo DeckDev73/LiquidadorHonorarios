@@ -9,7 +9,7 @@ from logic.uvr import obtener_codigos_faltantes_uvr, asignar_uvr
 from logic.especialidades import obtener_profesionales_y_especialidades
 from logic.liquidacion import liquidar_dataframe, generar_resumen_por_profesional
 
-from logic.utils import guardar_estado_como_pickle, cargar_estado_desde_pickle
+from logic.utils import guardar_estado_como_pickle, cargar_estado_desde_pickle, limpiar_archivos_anteriores
 
 app = Flask(__name__)
 app.secret_key = 'super-secret-key'
@@ -45,12 +45,17 @@ def index():
                            resumen=None,
                            df_preview=None)
 
+from logic.utils import guardar_estado_como_pickle, cargar_estado_desde_pickle, limpiar_archivos_anteriores
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     file = request.files['archivo']
     if not file:
         flash("No se seleccionó archivo.")
         return redirect(url_for('index'))
+
+    # 🧹 Eliminar archivos y estado anteriores
+    limpiar_archivos_anteriores(app.config['UPLOAD_FOLDER'])
 
     filename = secure_filename(file.filename)
     path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -65,8 +70,10 @@ def upload_file():
     STATE['df'] = df
     STATE['archivo_nombre'] = filename
     guardar_estado_como_pickle(df)
-    flash("✅ Archivo cargado correctamente.")
+
+    flash("✅ Archivo cargado correctamente y anteriores eliminados.")
     return redirect(url_for('index'))
+
 
 @app.route('/asignar_uvr', methods=['POST'])
 def asignar_uvr_route():
@@ -78,7 +85,7 @@ def asignar_uvr_route():
         return redirect(url_for('index'))
 
     try:
-        valor_uvr = float(valor_uvr)
+        valor_uvr = int(valor_uvr)
     except (ValueError, TypeError):
         flash("❌ Valor UVR inválido.")
         return redirect(url_for('index'))
