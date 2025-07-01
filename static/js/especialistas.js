@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (especialidades.length <= 1) {
       containerEspecialidad.style.display = 'none';
 
-      // Set the single specialty as the selected one
       if (especialidades.length === 1) {
         const unica = especialidades[0];
         const opt = document.createElement('option');
@@ -40,8 +39,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const profesional = selectEspecialista.value;
     const especialidad = selectEspecialidad.value || '';
 
-    const url = `/tabla_especialista?profesional=${encodeURIComponent(profesional)}&especialidad=${encodeURIComponent(especialidad)}`;
-    fetch(url)
+    // Leer checkboxes
+    const checkAnestesia = document.getElementById('check_anestesia_diff')?.checked || false;
+    const checkSocio = document.getElementById('check_socio')?.checked || false;
+    const checkReconstruc = document.getElementById('check_reconstruc')?.checked || false;
+    const checkPie = document.getElementById('check_pie')?.checked || false;
+
+    const params = new URLSearchParams({
+      profesional,
+      especialidad,
+      check_anestesia_diff: checkAnestesia,
+      check_socio: checkSocio,
+      check_reconstruc: checkReconstruc,
+      check_pie: checkPie,
+    });
+
+    fetch(`/tabla_especialista?${params.toString()}`)
       .then(response => response.text())
       .then(html => {
         document.getElementById('tabla-especialista').innerHTML = html;
@@ -51,10 +64,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
   selectEspecialista.addEventListener('change', () => {
     actualizarEspecialidades();
-    setTimeout(cargarTabla, 50); // ⏳ Da tiempo a que se actualice el select
+    setTimeout(cargarTabla, 50);
   });
 
   selectEspecialidad.addEventListener('change', cargarTabla);
+
+  // ⏫ Escucha eventos de los checkboxes de parámetros
+  document.querySelectorAll('#parametros-liquidacion input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', cargarTabla);
+  });
 
   actualizarEspecialidades();
   cargarTabla();

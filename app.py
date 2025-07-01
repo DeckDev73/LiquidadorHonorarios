@@ -7,9 +7,10 @@ import pandas as pd
 from logic.cargaArchivo import load_excel_file
 from logic.uvr import obtener_codigos_faltantes_uvr, asignar_uvr
 from logic.especialidades import obtener_profesionales_y_especialidades
-from logic.liquidacion import liquidar_dataframe, generar_resumen_por_profesional
-
+from logic.liquidacion import liquidar_dataframe, extraer_flags_desde_request
 from logic.utils import guardar_estado_como_pickle, cargar_estado_desde_pickle, limpiar_archivos_anteriores
+
+from types import SimpleNamespace
 
 app = Flask(__name__)
 app.secret_key = 'super-secret-key'
@@ -24,6 +25,7 @@ STATE = {
     'especialidades_seleccionadas': {},
 }
 
+
 @app.route('/', methods=['GET'])
 def index():
     if STATE['df'] is None:
@@ -31,7 +33,7 @@ def index():
         if df is not None:
             STATE['df'] = df
             STATE['archivo_nombre'] = 'estado.pkl'
-            flash(f"🧠 Estado restaurado automáticamente: estado.pkl")
+            flash("🧠 Estado restaurado automáticamente: estado.pkl")
 
     df = STATE['df']
     profesionales = obtener_profesionales_y_especialidades(df) if df is not None else {}
@@ -43,9 +45,9 @@ def index():
                            profesionales=profesionales,
                            seleccionadas=seleccionadas,
                            resumen=None,
-                           df_preview=None)
+                           df_preview=None,
+                           flags=SimpleNamespace(**STATE.get('flags_liquidacion', {})))
 
-from logic.utils import guardar_estado_como_pickle, cargar_estado_desde_pickle, limpiar_archivos_anteriores
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -54,7 +56,6 @@ def upload_file():
         flash("No se seleccionó archivo.")
         return redirect(url_for('index'))
 
-    # 🧹 Eliminar archivos y estado anteriores
     limpiar_archivos_anteriores(app.config['UPLOAD_FOLDER'])
 
     filename = secure_filename(file.filename)
@@ -95,6 +96,19 @@ def asignar_uvr_route():
     flash(f"✅ UVR {valor_uvr} asignada a {len(codigos)} código(s).")
     return redirect(url_for('index'))
 
+
+@app.route('/guardar_flags_liquidacion', methods=['POST'])
+def guardar_flags_liquidacion():
+    STATE['flags_liquidacion'] = {
+        'check_anestesia_diff': 'check_anestesia_diff' in request.form,
+        'check_socio': 'check_socio' in request.form,
+        'check_reconstruc': 'check_reconstruc' in request.form,
+        'check_pie': 'check_pie' in request.form
+    }
+    flash("⚙️ Parámetros de liquidación actualizados.")
+    return redirect(url_for('index'))
+
+
 @app.route('/tabla_especialista', methods=['GET'])
 def obtener_tabla_especialista():
     profesional = request.args.get('profesional')
@@ -104,50 +118,32 @@ def obtener_tabla_especialista():
         return "<p>❌ Faltan datos para mostrar la tabla.</p>"
 
     df = STATE['df']
-    columnas = ["Codigo Homologado", "Especialidad", "Valor UVR", "Valor Total"]
+    if df is None:
+        return "<p>⚠️ No hay datos disponibles.</p>"
 
-    df_filtrado = df[(df['Especialista'] == profesional) & (df['Especialidad'] == especialidad)]
+    flags = extraer_flags_desde_request(request.args)
+
+    df_liquidado = liquidar_dataframe(df, **flags)
+
+    df_filtrado = df_liquidado[
+        (df_liquidado['Especialista'] == profesional) &
+        (df_liquidado['Especialidad'] == especialidad)
+    ]
 
     if df_filtrado.empty:
         return "<p>⚠️ No hay datos disponibles para este especialista y especialidad.</p>"
 
+    columnas = ["Codigo Homologado", "Especialidad", "Valor UVR", "Valor Liquidado"]
     df_final = df_filtrado[columnas].copy()
 
-    # ✅ Formateo
     df_final['Codigo Homologado'] = df_final['Codigo Homologado'].astype(str).str.extract(r'(\d+)')
     df_final['Valor UVR'] = df_final['Valor UVR'].apply(lambda x: int(x) if pd.notna(x) and float(x).is_integer() else x)
-    df_final['Valor Total'] = df_final['Valor Total'].apply(lambda x: f"${x:,.0f}" if pd.notna(x) else '')
+    df_final['Valor Liquidado'] = df_final['Valor Liquidado'].apply(lambda x: f"${x:,.0f}" if pd.notna(x) else '')
 
     data = df_final.to_dict(orient='records')
 
     return render_template('partials/tabla_detalle.html', columnas=columnas, data=data)
 
-
-
-
-
-@app.route('/liquidar', methods=['POST'])
-def liquidar():
-    profesional = request.form.get('profesional')
-    flags = {
-        'check_anestesia_diff': 'check_anestesia_diff' in request.form,
-        'check_socio': 'check_socio' in request.form,
-        'check_reconstruc': 'check_reconstruc' in request.form,
-        'check_pie': 'check_pie' in request.form
-    }
-
-    STATE['df'] = liquidar_dataframe(STATE['df'], **flags)
-    guardar_estado_como_pickle(STATE['df'])
-
-    df_preview = STATE['df'][(STATE['df']['Especialista'] == profesional)]
-    resumen = generar_resumen_por_profesional(STATE['df'])
-
-    return render_template('main.html',
-                           archivo_nombre=STATE['archivo_nombre'],
-                           codigos_faltantes=obtener_codigos_faltantes_uvr(STATE['df']),
-                           profesionales=obtener_profesionales_y_especialidades(STATE['df']),
-                           resumen=resumen,
-                           df_preview=df_preview)
 
 @app.route('/descargar', methods=['GET'])
 def descargar():
@@ -161,6 +157,7 @@ def descargar():
         df.to_excel(writer, index=False)
     output.seek(0)
     return send_file(output, as_attachment=True, download_name="liquidacion.xlsx")
+
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,8 +1,10 @@
 import pandas as pd
 
+# 🔧 Constantes generales
 VALOR_UVR = 1270
 VALOR_UVR_ISS_ANESTESIA = 960
 
+# 🧑‍⚕️ Listas de especialistas con reglas especiales
 ANESTESIOLOGOS_CON_INCREMENTO = [
     "SINISTERRA MEJIA ERNEY MAURICIO ",
     "GALLEGO DUQUE JORGE ALEJANDRO ",
@@ -19,6 +21,16 @@ ORTOPEDISTAS_CON_INCREMENTO = [
     "CUELLO DIAZ MARLA KARIN ",
 ]
 
+# ✅ Extraer flags desde request.args
+def extraer_flags_desde_request(args) -> dict:
+    return {
+        'check_anestesia_diff': args.get('check_anestesia_diff', 'false').lower() == 'true',
+        'check_socio': args.get('check_socio', 'false').lower() == 'true',
+        'check_reconstruc': args.get('check_reconstruc', 'false').lower() == 'true',
+        'check_pie': args.get('check_pie', 'false').lower() == 'true',
+    }
+
+# 💰 Lógica de liquidación fila por fila
 def liquidar_fila(row, check_anestesia_diff=False, check_socio=False, check_reconstruc=False, check_pie=False):
     esp = str(row.get("Especialidad", "")).upper()
     especialista = str(row.get("Especialista", "")).upper()
@@ -105,7 +117,7 @@ def liquidar_fila(row, check_anestesia_diff=False, check_socio=False, check_reco
 
     return uvr * VALOR_UVR
 
-
+# 🧾 Aplicar liquidación a todo el DataFrame
 def liquidar_dataframe(df: pd.DataFrame, check_anestesia_diff=False, check_socio=False, check_reconstruc=False, check_pie=False) -> pd.DataFrame:
     df = df.copy()
     df['Valor Total'] = pd.to_numeric(df.get('Valor Total', 0), errors='coerce')
@@ -117,6 +129,3 @@ def liquidar_dataframe(df: pd.DataFrame, check_anestesia_diff=False, check_socio
         check_pie=check_pie
     ), axis=1)
     return df
-
-def generar_resumen_por_profesional(df: pd.DataFrame) -> pd.DataFrame:
-    return df.groupby("Especialista")["Valor Liquidado"].sum().reset_index().sort_values(by="Valor Liquidado", ascending=False)
