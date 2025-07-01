@@ -3,13 +3,11 @@ from werkzeug.utils import secure_filename
 import os
 from io import BytesIO
 import pandas as pd
-
 from logic.cargaArchivo import load_excel_file
 from logic.uvr import obtener_codigos_faltantes_uvr, asignar_uvr
 from logic.especialidades import obtener_profesionales_y_especialidades
 from logic.liquidacion import liquidar_dataframe, extraer_flags_desde_request
 from logic.utils import guardar_estado_como_pickle, cargar_estado_desde_pickle, limpiar_archivos_anteriores
-
 from types import SimpleNamespace
 
 app = Flask(__name__)
@@ -61,7 +59,7 @@ def upload_file():
     filename = secure_filename(file.filename)
     path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(path)
-
+    flash("✅ Archivo cargado correctamente y anteriores eliminados.")
     try:
         df = load_excel_file(path)
     except ValueError as e:
@@ -95,6 +93,12 @@ def asignar_uvr_route():
     guardar_estado_como_pickle(STATE['df'])
     flash(f"✅ UVR {valor_uvr} asignada a {len(codigos)} código(s).")
     return redirect(url_for('index'))
+
+@app.route('/uvr_faltantes', methods=['GET'])
+def uvr_faltantes():
+    df = STATE.get('df')
+    codigos = obtener_codigos_faltantes_uvr(df) if df is not None else []
+    return render_template('partials/uvr.html', codigos_faltantes=codigos)
 
 
 @app.route('/guardar_flags_liquidacion', methods=['POST'])

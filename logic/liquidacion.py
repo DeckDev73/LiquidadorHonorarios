@@ -4,7 +4,7 @@ import pandas as pd
 VALOR_UVR = 1270
 VALOR_UVR_ISS_ANESTESIA = 960
 
-# 🧑‍⚕️ Listas de especialistas con reglas especiales
+# Listas de especialistas con reglas especiales
 ANESTESIOLOGOS_CON_INCREMENTO = [
     "SINISTERRA MEJIA ERNEY MAURICIO ",
     "GALLEGO DUQUE JORGE ALEJANDRO ",
