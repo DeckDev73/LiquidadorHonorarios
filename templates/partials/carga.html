@@ -85,7 +85,7 @@
 
      
       <div id="archivo-preview" style="display: none; align-items: center; justify-content: center; gap: 12px; padding: 10px 0;">
-        <img src="/static/img/excel-icon.png" alt="Excel" style="width: 36px;">
+        <img src="../static/img/excel.png" alt="Excel" style="width: 26px;">
         <span id="archivo-nombre" style="font-size: 1rem; font-weight: 500; color: #0f0;"></span>
       </div>
 
@@ -94,6 +94,12 @@
   </div>
 
   <button type="submit" class="submit-btn">Subir archivo</button>
+</form>
+
+<form action="{{ url_for('eliminar_repetidos') }}" method="post" style="margin-top: 20px;">
+    <button type="submit" class="btn btn-warning">
+        🧹 Eliminar Repetidos
+    </button>
 </form>
 
 

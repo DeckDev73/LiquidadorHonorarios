@@ -73,6 +73,31 @@ def upload_file():
     flash("✅ Archivo cargado correctamente y anteriores eliminados.")
     return redirect(url_for('index'))
 
+@app.route('/eliminar_repetidos', methods=['POST'])
+def eliminar_repetidos():
+    df = STATE.get('df')
+
+    if df is None:
+        flash("⚠️ No hay datos cargados para limpiar.")
+        return redirect(url_for('index'))
+
+    original_shape = df.shape
+
+    # Eliminar filas duplicadas
+    df = df.drop_duplicates()
+
+    # Eliminar columnas duplicadas (columnas con los mismos valores en todas las filas)
+    df = df.loc[:, ~df.T.duplicated()]
+
+    nueva_shape = df.shape
+
+    STATE['df'] = df
+    guardar_estado_como_pickle(df)
+
+    flash(f"🧹 Eliminados duplicados. Dimensiones pasaron de {original_shape} a {nueva_shape}.")
+    return redirect(url_for('index'))
+
+
 
 @app.route('/asignar_uvr', methods=['POST'])
 def asignar_uvr_route():
@@ -147,6 +172,30 @@ def obtener_tabla_especialista():
     data = df_final.to_dict(orient='records')
 
     return render_template('partials/tabla_detalle.html', columnas=columnas, data=data)
+
+@app.route('/total_liquidado', methods=['GET'])
+def obtener_total_liquidado():
+    profesional = request.args.get('profesional')
+    especialidad = request.args.get('especialidad')
+
+    if not profesional or not especialidad:
+        return {"error": "Faltan parámetros"}, 400
+
+    df = STATE.get('df')
+    if df is None:
+        return {"error": "No hay datos cargados"}, 404
+
+    flags = extraer_flags_desde_request(request.args)
+    df_liquidado = liquidar_dataframe(df, **flags)
+
+    df_filtrado = df_liquidado[
+        (df_liquidado['Especialista'] == profesional) &
+        (df_liquidado['Especialidad'] == especialidad)
+    ]
+
+    total = df_filtrado['Valor Liquidado'].sum()
+    return {"total_liquidado": total}
+
 
 
 @app.route('/descargar', methods=['GET'])

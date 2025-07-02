@@ -5,6 +5,7 @@
   <form method="POST" action="/asignar_uvr">
     <label for="codigos[]">Selecciona uno o más Códigos Homologados:</label><br>
     <select name="codigos[]" id="codigos[]" multiple required>
+  
       {% for codigo in codigos_faltantes %}
         <option value="{{ codigo }}">{{ codigo|int }}</option>
       {% endfor %}
@@ -15,7 +16,10 @@
 
     <button type="submit"  value="asignar_uvr">Asignar UVR</button>
   </form>
+
+
 {% else %}
   <p> Todos los códigos ya tienen UVR asignada.</p>
 {% endif %}
-<p> <strong>{{ codigos_faltantes | length }}</strong>codigos sin UVR</p>
+
+<p> <strong>{{ codigos_faltantes | length }}</strong> codigos sin UVR</p>
