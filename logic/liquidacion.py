@@ -65,9 +65,8 @@ def liquidar_fila(row, flag=None):
 
     if "ANESTESIOLOGIA" in esp:
         base = uvr * VALOR_UVR_ISS_ANESTESIA
-        if especialista.upper() == "GARCIA FREITAG MARIA ANGELICA ":
-            base *= 0.6
-        elif especialista.upper() in [a.strip().upper() for a in ANESTESIOLOGOS_CON_INCREMENTO]:
+        
+        if especialista.upper() in [a.strip().upper() for a in ANESTESIOLOGOS_CON_INCREMENTO]:
             base *= 1.3
         if "Multiple - Igual Via Igual Especialista" in via:
             return base * 0.6

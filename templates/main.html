@@ -2,29 +2,39 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <link rel ="stylesheet" href="../../static/css/main.css">
+
     <title>Liquidador de Honorarios</title>
 </head>
 <body>
   
-<div style="display: flex; flex-direction: column; gap: 30px;">
+
+<div class="container">
+
+  {% include "partials/carga.html" %}<br>
+
+  {% if archivo_nombre %}  {# ✅ Solo si hay archivo cargado o restaurado #}
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash-messages">
+          <ul>
+            {% for message in messages %}
+              <li>{{ message }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% include "partials/uvr.html" %}<br>
+    {% include "partials/especialidades.html" %}
+    {% include "partials/especialistas.html" %}
+    <p><a href="/descargar">📦 Descargar resultados</a></p>
+
+  {% endif %}
 
 
-{% include "partials/carga.html" %}<br>
-{% with messages = get_flashed_messages() %}
-    {% if messages %}
-      <div class="flash-messages">
-        <ul>
-          {% for message in messages %}
-            <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-    {% endif %}
-  {% endwith %}
-{% include "partials/uvr.html" %}<br>
-{% include "partials/especialidades.html" %}
-{% include "partials/especialistas.html" %}
-<p><a href="/descargar">📦 Descargar resultados</a></p> 
 
 
 

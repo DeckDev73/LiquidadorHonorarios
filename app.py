@@ -232,6 +232,7 @@ def obtener_total_liquidado():
 
 
 
+
 @app.route('/descargar', methods=['GET'])
 def descargar():
     df = STATE['df']
@@ -244,7 +245,33 @@ def descargar():
         df.to_excel(writer, index=False)
     output.seek(0)
     return send_file(output, as_attachment=True, download_name="liquidacion.xlsx")
+@app.route('/porcentaje_liquidado', methods=['GET'])
+def obtener_porcentaje_liquidado():
+    profesional = request.args.get('profesional')
+    especialidad = request.args.get('especialidad')
 
+    if not profesional or not especialidad:
+        return {"error": "Faltan parámetros"}, 400
+
+    df = STATE.get('df')
+    if df is None:
+        return {"error": "No hay datos cargados"}, 404
+
+    df_liquidado = liquidar_dataframe(df)
+
+    df_filtrado = df_liquidado[
+        (df_liquidado['Especialista'] == profesional) &
+        (df_liquidado['Especialidad'] == especialidad)
+    ]
+
+    total_filas = len(df_filtrado)
+    if total_filas == 0:
+        return {"porcentaje_liquidado": 0}
+
+    filas_liquidadas = (df_filtrado['Valor Liquidado'] > 0).sum()
+    porcentaje = round((filas_liquidadas / total_filas) * 100)
+
+    return {"porcentaje_liquidado": porcentaje}
 
 if __name__ == '__main__':
     app.run(debug=True)

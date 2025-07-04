@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(html => {
         document.getElementById('tabla-especialista').innerHTML = html;
         cargarTotalLiquidado();
+        actualizarPorcentajeLiquidado(profesional, especialidad)
       });
   }
 
@@ -72,13 +73,29 @@ document.addEventListener('DOMContentLoaded', function () {
         if (el) {
           if (data.total_liquidado !== undefined) {
             const valorFormateado = new Intl.NumberFormat('es-CO').format(data.total_liquidado);
-            el.innerHTML = `💰 Total liquidado: $${valorFormateado}`;
+            el.innerHTML = `Total liquidado: $${valorFormateado}`;
           } else {
             el.innerHTML = '';
           }
         }
       });
   }
+  function actualizarPorcentajeLiquidado(profesional, especialidad) {
+  fetch(`/porcentaje_liquidado?profesional=${encodeURIComponent(profesional)}&especialidad=${encodeURIComponent(especialidad)}`)
+    .then(response => response.json())
+    .then(data => {
+      const div = document.getElementById('porcentaje-liquidado-box');
+      if (data.porcentaje_liquidado !== undefined) {
+        div.textContent = data.porcentaje_liquidado + '% liquidado';
+      } else {
+        div.textContent = '0% liquidado';
+      }
+    })
+    .catch(error => {
+      console.error('Error al obtener porcentaje liquidado:', error);
+    });
+}
+
 
   // ✅ Sin botón
   checkboxes.forEach((checkbox) => {

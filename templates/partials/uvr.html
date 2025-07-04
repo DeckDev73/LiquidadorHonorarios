@@ -1,13 +1,27 @@
+<header>
+  <!-- En tu HTML -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<!-- jQuery (debe estar antes de Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Select2 CSS & JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
+  <link rel="stylesheet" href="../../static/css/uvr.css">
+</header>
 <h2> Ingreso manual de UVR</h2>
 
 {% if codigos_faltantes %}
+
   
-  <form method="POST" action="/asignar_uvr">
+  <form method="POST" class="form-uvr" action="/asignar_uvr">
     <label for="codigos[]">Selecciona uno o más Códigos Homologados:</label><br>
-    <select name="codigos[]" id="codigos[]" multiple required>
+    <select name="codigos[]" id="codigos" class="select-codigo" multiple required  >
   
       {% for codigo in codigos_faltantes %}
-        <option value="{{ codigo }}">{{ codigo|int }}</option>
+        <option value="{{ codigo }}" class="opcion-uvr">{{ codigo|int }}</option>
       {% endfor %}
     </select><br><br>
 
@@ -23,3 +37,29 @@
 {% endif %}
 
 <p> <strong>{{ codigos_faltantes | length }}</strong> codigos sin UVR</p>
+<script>
+// $(document).ready(function() {
+//   $('#codigos').select2({
+//     placeholder: "Selecciona uno o más códigos",
+//     width: '100%',
+//     color: 'black'
+//   });
+// });
+
+
+$('#codigos').select2({
+  placeholder: "Selecciona uno o más códigos",
+  width: '100%',
+  closeOnSelect: false, // Mantiene el menú abierto tras seleccionar
+  allowClear: true,     // Habilita botón para limpiar selección
+  tags: false,          // No permitas etiquetas escritas libremente
+  templateResult: function (data) {
+    // Oculta la opción ya seleccionada en el desplegable
+    if ($('#codigos').val() && $('#codigos').val().includes(data.id)) {
+      return null;
+    }
+    return data.text;
+  }
+});
+
+</script>
