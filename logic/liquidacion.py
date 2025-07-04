@@ -1,8 +1,11 @@
 import pandas as pd
+import pickle
+import os
 
 # 🔧 Constantes generales
 VALOR_UVR = 1270
 VALOR_UVR_ISS_ANESTESIA = 960
+FLAGS_PATH = os.path.join("uploads", "flags_estado.pkl")
 
 # Listas de especialistas con reglas especiales
 ANESTESIOLOGOS_CON_INCREMENTO = [
@@ -21,19 +24,39 @@ ORTOPEDISTAS_CON_INCREMENTO = [
     "CUELLO DIAZ MARLA KARIN ",
 ]
 
-# ✅ Extraer flags desde request.args
-def extraer_flags_desde_request(args) -> dict:
-    return {
-        'check_anestesia_diff': args.get('check_anestesia_diff', 'false').lower() == 'true',
-        'check_socio': args.get('check_socio', 'false').lower() == 'true',
-        'check_reconstruc': args.get('check_reconstruc', 'false').lower() == 'true',
-        'check_pie': args.get('check_pie', 'false').lower() == 'true',
-    }
+# 📥 Función para cargar flags desde pkl
+def cargar_flags_por_profesional():
+    if os.path.exists(FLAGS_PATH):
+        with open(FLAGS_PATH, 'rb') as f:
+            return pickle.load(f)
+    return {}
 
-# 💰 Lógica de liquidación fila por fila
-def liquidar_fila(row, check_anestesia_diff=False, check_socio=False, check_reconstruc=False, check_pie=False):
+# 📤 Función para guardar flags (por si necesitas en otros scripts)
+def guardar_flags_por_profesional(flags_dict: dict):
+    # 👇 Asegurar que la carpeta "uploads" exista
+    os.makedirs(os.path.dirname(FLAGS_PATH), exist_ok=True)
+
+    with open(FLAGS_PATH, 'wb') as f:
+        pickle.dump(flags_dict, f)
+
+# ✅ Guardar un único flag por especialista
+def actualizar_flag_especialista(nombre_profesional: str, flag_activado: str):
+    flags_dict = cargar_flags_por_profesional()
+    flags_dict[nombre_profesional.strip()] = flag_activado  # Aseguramos consistencia
+    guardar_flags_por_profesional(flags_dict)
+
+def eliminar_flag_profesional(nombre_profesional: str):
+    flags_dict = cargar_flags_por_profesional()
+    nombre_profesional = nombre_profesional.strip()
+    if nombre_profesional in flags_dict:
+        del flags_dict[nombre_profesional]
+        guardar_flags_por_profesional(flags_dict)
+
+
+# 🔧 Lógica de liquidación
+def liquidar_fila(row, flag=None):
     esp = str(row.get("Especialidad", "")).upper()
-    especialista = str(row.get("Especialista", "")).upper()
+    especialista = str(row.get("Especialista", "")).strip()
     tipo = str(row.get("Tipo Procedimiento", "")).upper()
     plan = str(row.get("Plan Beneficios", "")).upper()
     via = str(row.get("Cantidad o Via", ""))
@@ -42,9 +65,9 @@ def liquidar_fila(row, check_anestesia_diff=False, check_socio=False, check_reco
 
     if "ANESTESIOLOGIA" in esp:
         base = uvr * VALOR_UVR_ISS_ANESTESIA
-        if especialista == "GARCIA FREITAG MARIA ANGELICA ":
+        if especialista.upper() == "GARCIA FREITAG MARIA ANGELICA ":
             base *= 0.6
-        elif especialista in ANESTESIOLOGOS_CON_INCREMENTO:
+        elif especialista.upper() in [a.strip().upper() for a in ANESTESIOLOGOS_CON_INCREMENTO]:
             base *= 1.3
         if "Multiple - Igual Via Igual Especialista" in via:
             return base * 0.6
@@ -52,6 +75,30 @@ def liquidar_fila(row, check_anestesia_diff=False, check_socio=False, check_reco
             return base * 0.75
         return base
 
+    # FLAG: Cirujano reconstructivo
+    if flag == "check_reconstruc":
+        if "RECONSTRUCTIVA" in tipo:
+            return 2700000 if "EPS" in plan else 3000000
+        base = uvr * VALOR_UVR
+        return base + base * 0.2
+
+    # FLAG: Cirujano de pie y tobillo
+    if flag == "check_pie":
+        if "CONSULTA" in tipo:
+            return 30000
+        elif "JUNTA" in tipo or "ESPECIAL" in tipo:
+            return valor * 0.7
+        elif "QUIR" in tipo or "PROCED QX" in tipo or "PROCEDIMIENTOS QUIRURGICOS" in tipo:
+            base = uvr * VALOR_UVR
+            return base + base * 0.3
+
+    # FLAG: Socio ortopedista
+    if flag == "check_socio" and "ORTOPEDIA" in esp:
+        if "SOAT" in plan:
+            return valor * 0.7
+        return valor * 0.85
+
+    # Otras reglas especiales por especialidad
     if "MAXILOFACIAL" in esp:
         if "INTERCONSULTA" in tipo: return 35000
         elif "CONSULTA" in tipo: return 29000
@@ -85,20 +132,8 @@ def liquidar_fila(row, check_anestesia_diff=False, check_socio=False, check_reco
         elif "YESO" in tipo: return 260000
         elif "MALFORMACION" in tipo: return 980000
 
-    if check_reconstruc:
-        if "RECONSTRUCTIVA" in tipo: return 2700000 if "EPS" in plan else 3000000
-        base = uvr * VALOR_UVR
-        return base + base * 0.2
-
-    if check_pie:
-        if "CONSULTA" in tipo: return 30000
-        elif "JUNTA" in tipo or "ESPECIAL" in tipo: return valor * 0.7
-        elif "QUIR" in tipo or "PROCED QX" in tipo or "PROCEDIMIENTOS QUIRURGICOS" in tipo:
-            base = uvr * VALOR_UVR
-            return base + base * 0.3
-
     if "MANO" in esp:
-        if "CUELLO DIAZ MARLA KARIN " in especialista:
+        if especialista.upper() == "CUELLO DIAZ MARLA KARIN ":
             return (uvr * VALOR_UVR) * 1.3
         if "CONSULTA" in tipo: return 30000
         elif "JUNTA" in tipo or "ESPECIAL" in tipo: return valor * 0.7
@@ -106,26 +141,28 @@ def liquidar_fila(row, check_anestesia_diff=False, check_socio=False, check_reco
             return (uvr * VALOR_UVR) + (uvr * VALOR_UVR) * 0.3
 
     if "ORTOPEDIA" in esp:
-        if especialista.strip().upper() in [o.strip().upper() for o in ORTOPEDISTAS_CON_INCREMENTO]:
+        if especialista.upper() in [o.strip().upper() for o in ORTOPEDISTAS_CON_INCREMENTO]:
             return (uvr * VALOR_UVR) * 1.3
-        if check_socio:
-            return valor * 0.85 if "SOAT" not in plan else valor * 0.7
-        if "CONSULTA" in tipo: return 27000
+        if "CONSULTA" in tipo:
+            return 27000
         elif "QUIR" in tipo or "PROCED QX" in tipo or "PROCEDIMIENTOS QUIRURGICOS" in tipo:
             return (uvr * VALOR_UVR) + (uvr * VALOR_UVR) * 0.2
-        elif "NO QUIR" in tipo: return valor * 0.7
+        elif "NO QUIR" in tipo:
+            return valor * 0.7
 
     return uvr * VALOR_UVR
 
-# 🧾 Aplicar liquidación a todo el DataFrame
-def liquidar_dataframe(df: pd.DataFrame, check_anestesia_diff=False, check_socio=False, check_reconstruc=False, check_pie=False) -> pd.DataFrame:
+
+# 🧾 Aplicar liquidación a todo el DataFrame usando flags por especialista
+def liquidar_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df['Valor Total'] = pd.to_numeric(df.get('Valor Total', 0), errors='coerce')
-    df['Valor Liquidado'] = df.apply(lambda row: liquidar_fila(
-        row,
-        check_anestesia_diff=check_anestesia_diff,
-        check_socio=check_socio,
-        check_reconstruc=check_reconstruc,
-        check_pie=check_pie
-    ), axis=1)
+    flags_dict = cargar_flags_por_profesional()
+
+    def aplicar_liquidacion(row):
+        especialista = str(row.get("Especialista", "")).strip()
+        flag = flags_dict.get(especialista)
+        return liquidar_fila(row, flag=flag)
+
+    df['Valor Liquidado'] = df.apply(aplicar_liquidacion, axis=1)
     return df

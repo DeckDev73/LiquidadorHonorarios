@@ -115,7 +115,7 @@
 <label for="especialista">Especialista:</label>
 <select name="profesional" id="especialista" required>
   {% for prof in profesionales %}
-    <option value="{{ prof }}" {% if loop.first %}selected{% endif %}>{{ prof }}</option>
+    <option value="{{ prof }}" {% if prof == seleccionadas|first %}selected{% endif %}>{{ prof }}</option>
   {% endfor %}
 </select>
 
@@ -125,10 +125,10 @@
 </div>
 
 <div id="parametros-liquidacion">
-  <label><input type="checkbox" id="check_anestesia_diff"> Anestesiología diferencial (60%)</label><br>
-  <label><input type="checkbox" id="check_socio"> Es socio ortopedista</label><br>
-  <label><input type="checkbox" id="check_reconstruc"> Cirujano reconstructivo</label><br>
-  <label><input type="checkbox" id="check_pie"> Cirujano de pie y tobillo</label><br>
+  <label><input type="checkbox" id="check_anestesia_diff" {% if flags.check_anestesia_diff %}checked{% endif %}> Anestesiología diferencial (60%)</label><br>
+  <label><input type="checkbox" id="check_socio" {% if flags.check_socio %}checked{% endif %}> Es socio ortopedista</label><br>
+  <label><input type="checkbox" id="check_reconstruc" {% if flags.check_reconstruc %}checked{% endif %}> Cirujano reconstructivo</label><br>
+  <label><input type="checkbox" id="check_pie" {% if flags.check_pie %}checked{% endif %}> Cirujano de pie y tobillo</label><br>
 </div>
 
 <!--tabla-->

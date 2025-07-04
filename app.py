@@ -6,9 +6,10 @@ import pandas as pd
 from logic.cargaArchivo import load_excel_file
 from logic.uvr import obtener_codigos_faltantes_uvr, asignar_uvr
 from logic.especialidades import obtener_profesionales_y_especialidades
-from logic.liquidacion import liquidar_dataframe, extraer_flags_desde_request
+from logic.liquidacion import liquidar_dataframe, actualizar_flag_especialista, eliminar_flag_profesional, cargar_flags_por_profesional
 from logic.utils import guardar_estado_como_pickle, cargar_estado_desde_pickle, limpiar_archivos_anteriores
 from types import SimpleNamespace
+from flask import jsonify
 
 app = Flask(__name__)
 app.secret_key = 'super-secret-key'
@@ -37,15 +38,40 @@ def index():
     profesionales = obtener_profesionales_y_especialidades(df) if df is not None else {}
     seleccionadas = {k: v[0] for k, v in profesionales.items()}
 
-    return render_template('main.html',
-                           archivo_nombre=STATE['archivo_nombre'],
-                           codigos_faltantes=obtener_codigos_faltantes_uvr(df) if df is not None else [],
-                           profesionales=profesionales,
-                           seleccionadas=seleccionadas,
-                           resumen=None,
-                           df_preview=None,
-                           flags=SimpleNamespace(**STATE.get('flags_liquidacion', {})))
+    primer_profesional = next(iter(profesionales), "")
+    flags_dict = cargar_flags_por_profesional()
+    flag_activo = flags_dict.get(primer_profesional, None)
 
+    flags_estado = {
+        'check_anestesia_diff': flag_activo == 'check_anestesia_diff',
+        'check_socio': flag_activo == 'check_socio',
+        'check_reconstruc': flag_activo == 'check_reconstruc',
+        'check_pie': flag_activo == 'check_pie'
+    }
+
+    return render_template(
+        'main.html',
+        archivo_nombre=STATE['archivo_nombre'],
+        codigos_faltantes=obtener_codigos_faltantes_uvr(df) if df is not None else [],
+        profesionales=profesionales,
+        seleccionadas=seleccionadas,
+        resumen=None,
+        df_preview=None,
+        flags=SimpleNamespace(**flags_estado)
+    )
+
+@app.route('/get_flag', methods=['GET'])
+def get_flag():
+    profesional = request.args.get('profesional')
+    flags_dict = cargar_flags_por_profesional()
+    flag_activo = flags_dict.get(profesional, "")
+
+    return jsonify({
+        'check_anestesia_diff': flag_activo == 'check_anestesia_diff',
+        'check_socio': flag_activo == 'check_socio',
+        'check_reconstruc': flag_activo == 'check_reconstruc',
+        'check_pie': flag_activo == 'check_pie'
+    })
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -128,14 +154,24 @@ def uvr_faltantes():
 
 @app.route('/guardar_flags_liquidacion', methods=['POST'])
 def guardar_flags_liquidacion():
-    STATE['flags_liquidacion'] = {
-        'check_anestesia_diff': 'check_anestesia_diff' in request.form,
-        'check_socio': 'check_socio' in request.form,
-        'check_reconstruc': 'check_reconstruc' in request.form,
-        'check_pie': 'check_pie' in request.form
-    }
-    flash("⚙️ Parámetros de liquidación actualizados.")
+    profesional = request.form.get('profesional')
+    flags = ['check_anestesia_diff', 'check_socio', 'check_reconstruc', 'check_pie']
+    seleccionados = [f for f in flags if f in request.form]
+
+    if not profesional:
+        flash("❌ Falta el nombre del profesional.")
+        return redirect(url_for('index'))
+
+    if len(seleccionados) == 0:
+        eliminar_flag_profesional(profesional)
+        flash(f"⚠️ Sin flag activo. Se aplicará liquidación base para {profesional}.")
+    elif len(seleccionados) == 1:
+        actualizar_flag_especialista(profesional, seleccionados[0])
+        flash(f"✅ Flag '{seleccionados[0]}' asignado a {profesional}")
+    else:
+        flash("❌ Solo se permite un flag por especialista.")
     return redirect(url_for('index'))
+
 
 
 @app.route('/tabla_especialista', methods=['GET'])
@@ -150,9 +186,8 @@ def obtener_tabla_especialista():
     if df is None:
         return "<p>⚠️ No hay datos disponibles.</p>"
 
-    flags = extraer_flags_desde_request(request.args)
-
-    df_liquidado = liquidar_dataframe(df, **flags)
+    # ✅ Ya no necesitamos pasar flags
+    df_liquidado = liquidar_dataframe(df)
 
     df_filtrado = df_liquidado[
         (df_liquidado['Especialista'] == profesional) &
@@ -164,13 +199,11 @@ def obtener_tabla_especialista():
 
     columnas = ["Codigo Homologado", "Especialidad", "Valor UVR", "Valor Liquidado"]
     df_final = df_filtrado[columnas].copy()
-
     df_final['Codigo Homologado'] = df_final['Codigo Homologado'].astype(str).str.extract(r'(\d+)')
     df_final['Valor UVR'] = df_final['Valor UVR'].apply(lambda x: int(x) if pd.notna(x) and float(x).is_integer() else x)
     df_final['Valor Liquidado'] = df_final['Valor Liquidado'].apply(lambda x: f"${x:,.0f}" if pd.notna(x) else '')
 
     data = df_final.to_dict(orient='records')
-
     return render_template('partials/tabla_detalle.html', columnas=columnas, data=data)
 
 @app.route('/total_liquidado', methods=['GET'])
@@ -185,8 +218,8 @@ def obtener_total_liquidado():
     if df is None:
         return {"error": "No hay datos cargados"}, 404
 
-    flags = extraer_flags_desde_request(request.args)
-    df_liquidado = liquidar_dataframe(df, **flags)
+    # ✅ Sin flags desde request
+    df_liquidado = liquidar_dataframe(df)
 
     df_filtrado = df_liquidado[
         (df_liquidado['Especialista'] == profesional) &
@@ -195,6 +228,7 @@ def obtener_total_liquidado():
 
     total = df_filtrado['Valor Liquidado'].sum()
     return {"total_liquidado": total}
+
 
 
 
