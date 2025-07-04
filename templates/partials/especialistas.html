@@ -133,7 +133,7 @@
 
 <!--tabla-->
 <div id="tabla-especialista"></div>
-<div id="/total_liquidado"></div>
+<div id="total-liquidado-box"></div>
 
 
 <!-- Este script inyecta los datos directamente en el archivo JS -->
@@ -147,66 +147,3 @@
 
 <!-- Cargar script JS externo -->
 <script src="{{ url_for('static', filename='js/especialistas.js') }}"></script>
-<script>
- 
-  const checkboxes = document.querySelectorAll('#parametros-liquidacion input[type="checkbox"]');
-
-  checkboxes.forEach((checkbox) => {
-    checkbox.addEventListener('change', () => {
-      if (checkbox.checked) {
-        checkboxes.forEach((otherCheckbox) => {
-          if (otherCheckbox !== checkbox) {
-            otherCheckbox.checked = false;
-          }
-        });
-      }
-    });
-  });
-
-
-  function cargarTotalLiquidado() {
-  const profesional = document.getElementById("especialista").value;
-  const especialidad = document.getElementById("especialidad").value;
-
-  const params = new URLSearchParams({
-    profesional: profesional,
-    especialidad: especialidad,
-    check_anestesia_diff: document.getElementById('check_anestesia_diff').checked,
-    check_socio: document.getElementById('check_socio').checked,
-    check_reconstruc: document.getElementById('check_reconstruc').checked,
-    check_pie: document.getElementById('check_pie').checked
-  });
-
-  fetch(`/total_liquidado?${params.toString()}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.total_liquidado !== undefined) {
-        const valorFormateado = new Intl.NumberFormat('es-CO').format(data.total_liquidado);
-        document.getElementById("total-liquidado-box").innerHTML = `💰 Total liquidado: $${valorFormateado}`;
-      } else {
-        document.getElementById("total-liquidado-box").innerHTML = '';
-      }
-    });
-}
-function cargarTablaEspecialista() {
-  const profesional = document.getElementById("especialista").value;
-  const especialidad = document.getElementById("especialidad").value;
-
-  const params = new URLSearchParams({
-    profesional: profesional,
-    especialidad: especialidad,
-    check_anestesia_diff: document.getElementById('check_anestesia_diff').checked,
-    check_socio: document.getElementById('check_socio').checked,
-    check_reconstruc: document.getElementById('check_reconstruc').checked,
-    check_pie: document.getElementById('check_pie').checked
-  });
-
-  fetch(`/tabla_especialista?${params.toString()}`)
-    .then(response => response.text())
-    .then(html => {
-      document.getElementById("tabla-especialista").innerHTML = html;
-      cargarTotalLiquidado();  // 💡 se llama después de cargar la tabla
-    });
-}
-
-</script>
