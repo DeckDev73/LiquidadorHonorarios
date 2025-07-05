@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <link rel ="stylesheet" href="../../static/css/main.css">
-
     <title>Liquidador de Honorarios</title>
 </head>
 <body>
   
-
 <div class="container">
 
   {% include "partials/carga.html" %}<br>
@@ -29,55 +27,14 @@
 
     {% include "partials/uvr.html" %}<br>
     {% include "partials/especialidades.html" %}
-    {% include "partials/especialistas.html" %}
+    {% include "partials/especialistas.html" %}<br>
+    {% include "partials/resumen.html" %}<br>
+    
     <p><a href="/descargar">📦 Descargar resultados</a></p>
 
   {% endif %}
 
-
-
-
-
 </div>
 
-
-
-
-
-
-<!-- 
-    Subir archivo
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <label for="archivo">Subir archivo Excel:</label>
-        <input type="file" name="archivo" required>
-        <button type="submit">Cargar</button>
-    </form>
-
-     <form action="/asignar_uvr" method="post">
-        <p>Asignar UVR a códigos manualmente:</p>
-        <input type="text" name="codigos[]" placeholder="Código 1">
-        <input type="number" name="valor_uvr" placeholder="Valor UVR">
-        <button type="submit">Asignar UVR</button>
-    </form>
-
-    <!- Unificar especialidades 
-    <form action="/unificar_especialidades" method="post">
-        <p>Unificar especialidades (ejemplo):</p>
-        <input type="text" name="especialidad_GALLEGO DUQUE JORGE ALEJANDRO " value="ANESTESIOLOGIA">
-        <button type="submit">Unificar</button>
-    </form>
-
-    <! Liquidar 
-    <form action="/liquidar" method="post">
-        <p>Liquidar profesional:</p>
-        <input type="text" name="profesional" placeholder="Nombre profesional">
-        <label><input type="checkbox" name="check_socio"> Socio</label>
-        <label><input type="checkbox" name="check_pie"> Cirujano Pie</label>
-        <label><input type="checkbox" name="check_reconstruc"> Reconstructivo</label>
-        <label><input type="checkbox" name="check_anestesia_diff"> Anestesia 60%</label>
-        <button type="submit">Liquidar</button>
-    </form>-->
-
-   
 </body>
 </html>

@@ -8,6 +8,7 @@ from logic.uvr import obtener_codigos_faltantes_uvr, asignar_uvr
 from logic.especialidades import obtener_profesionales_y_especialidades
 from logic.liquidacion import liquidar_dataframe, actualizar_flag_especialista, eliminar_flag_profesional, cargar_flags_por_profesional
 from logic.utils import guardar_estado_como_pickle, cargar_estado_desde_pickle, limpiar_archivos_anteriores
+from logic.resumen import obtener_resumen_general, guardar_resumen_como_pickle, cargar_resumen_desde_pickle
 from types import SimpleNamespace
 from flask import jsonify
 
@@ -230,7 +231,21 @@ def obtener_total_liquidado():
     return {"total_liquidado": total}
 
 
-
+# ✅ RUTAS PARA RESUMEN GENERAL (componente)
+@app.route('/resumen_data', methods=['GET'])
+def resumen_data():
+    """Endpoint para obtener datos del resumen como JSON"""
+    df = STATE.get('df')
+    
+    if df is None:
+        return jsonify({"error": "No hay datos cargados"}), 404
+    
+    resumen = obtener_resumen_general(df)
+    
+    # Guardar en pickle para uso posterior
+    guardar_resumen_como_pickle(resumen)
+    
+    return jsonify(resumen)
 
 
 @app.route('/descargar', methods=['GET'])

@@ -1,0 +1,125 @@
+<head>
+    <link rel="stylesheet" href="../../static/css/resumen.css">
+</head>
+
+<h2>Resumen General de Liquidación</h2>
+
+<!-- Tabla de especialistas -->
+<div class="tabla-container">
+    <div id="tabla-resumen-container">
+        <p class="cargando">🔄 Cargando resumen...</p>
+    </div>
+</div>
+
+
+<!-- Resumen de totales -->
+<div class="totales-container">
+    <div class="total-card">
+        <h3>Total Liquidado</h3>
+        <p class="total-amount" id="total-general">$0</p>
+    </div>
+    <div class="total-card">
+        <h3>Porcentaje Promedio</h3>
+        <p class="total-percentage" id="porcentaje-promedio">0%</p>
+    </div>
+    <div class="total-card">
+        <h3>Total Especialistas</h3>
+        <p class="total-count" id="total-especialistas">0</p>
+    </div>
+</div>
+
+<!-- Botón para actualizar -->
+<div class="actualizar-container">
+    <button id="actualizar-resumen-btn" class="btn btn-primary">Actualizar Resumen</button>
+</div>
+
+<script>
+// Cargar resumen al cargar la página
+function cargarResumen() {
+    fetch('/resumen_data')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('tabla-resumen-container').innerHTML = 
+                    '<p class="sin-datos">⚠️ ' + data.error + '</p>';
+                return;
+            }
+            
+            // Actualizar totales
+            document.getElementById('total-general').textContent = data.totales.total_liquidado_formateado;
+            document.getElementById('porcentaje-promedio').textContent = data.totales.porcentaje_promedio + '%';
+            document.getElementById('total-especialistas').textContent = data.totales.total_especialistas;
+            
+            // Crear tabla
+            let tablaHtml = '';
+            if (data.especialistas.length > 0) {
+                tablaHtml = `
+                    <table class="tabla-resumen">
+                        <thead>
+                            <tr>
+                                <th>Especialista</th>
+                                <th>Porcentaje Liquidado (%)</th>
+                                <th>Total Liquidado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                data.especialistas.forEach(esp => {
+                    tablaHtml += `
+                        <tr>
+                            <td class="especialista-nombre">${esp.especialista}</td>
+                            <td class="porcentaje">
+                                <div class="porcentaje-bar">
+                                    <div class="porcentaje-fill" style="width: ${esp.porcentaje_liquidado}%"></div>
+                                    <span class="porcentaje-text">${esp.porcentaje_liquidado}%</span>
+                                </div>
+                            </td>
+                            <td class="total-liquidado">${esp.total_liquidado_formateado}</td>
+                        </tr>
+                    `;
+                });
+                
+                tablaHtml += `
+                        </tbody>
+                    </table>
+                `;
+            } else {
+                tablaHtml = '<p class="sin-datos">⚠️ No hay especialistas para mostrar.</p>';
+            }
+            
+            document.getElementById('tabla-resumen-container').innerHTML = tablaHtml;
+            
+            // Agregar hover effect
+            document.querySelectorAll('.tabla-resumen tbody tr').forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#f0f8ff';
+                });
+                row.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '';
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('tabla-resumen-container').innerHTML = 
+                '<p class="sin-datos">❌ Error al cargar el resumen</p>';
+        });
+}
+
+// Actualizar resumen
+document.getElementById('actualizar-resumen-btn').addEventListener('click', function() {
+    this.textContent = '🔄 Actualizando...';
+    this.disabled = true;
+    
+    cargarResumen();
+    
+    setTimeout(() => {
+        this.textContent = '🔄 Actualizar Resumen';
+        this.disabled = false;
+    }, 1000);
+});
+
+// Cargar automáticamente cuando se incluye el componente
+document.addEventListener('DOMContentLoaded', cargarResumen);
+</script>

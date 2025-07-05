@@ -1,0 +1,202 @@
+body {
+    background-color: #121212;
+    color: #ffffff;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+h2 {
+    color: #ffffff;
+    text-align: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #444;
+    padding-bottom: 5px;
+}
+
+.btn {
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+    max-width: 500px;
+    box-sizing: border-box;
+}
+
+.btn-primary {
+    background-color: #6a5acd;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #7d6df2;
+}
+
+.btn-primary:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.cargando {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+}
+
+/* Totales */
+.totales-container {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 30px;
+    gap: 20px;
+    max-width: 100%;
+}
+
+.total-card {
+    background-color: #1e1e1e;
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    flex: 1;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+    border: 1px solid #333;
+}
+
+.total-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+.total-amount,
+.total-percentage,
+.total-count {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+}
+
+/* Tabla */
+.tabla-container {
+    background: #1e1e1e;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+    margin-bottom: 30px;
+    border: 1px solid #333;
+    max-width: 100%;
+}
+
+.tabla-resumen {
+    width: 100%;
+    border-collapse: collapse;
+    color: #fff;
+    background-color: #1e1e1e;
+}
+
+.tabla-resumen thead {
+    background: #2a2a2a;
+}
+
+.tabla-resumen th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #f0f0f0;
+    border-bottom: 2px solid #444;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.tabla-resumen td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #444;
+}
+
+.tabla-resumen tbody tr:nth-child(even) {
+    background-color: #262626;
+}
+
+.tabla-resumen tbody tr:hover {
+    background-color: #333 !important;
+}
+
+.especialista-nombre {
+    font-weight: 500;
+    color: #e0e0e0;
+}
+
+.porcentaje {
+    width: 200px;
+    max-width: 100%;
+}
+
+.porcentaje-bar {
+    position: relative;
+    background: #2a2a2a;
+    height: 25px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.porcentaje-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+    transition: width 0.3s ease;
+}
+
+.porcentaje-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.total-liquidado {
+    font-weight: 600;
+    color: #28a745;
+    text-align: right;
+}
+
+/* Sin datos */
+.sin-datos {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+.sin-datos p {
+    font-size: 16px;
+    margin: 0;
+}
+
+/* Actualizar */
+.actualizar-container {
+    text-align: center;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .totales-container {
+        flex-direction: column;
+    }
+
+    .tabla-resumen {
+        font-size: 14px;
+    }
+
+    .tabla-resumen th,
+    .tabla-resumen td {
+        padding: 8px;
+    }
+
+    .porcentaje {
+        width: 120px;
+    }
+}
