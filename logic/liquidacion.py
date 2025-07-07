@@ -1,3 +1,4 @@
+#liquidacion.py
 import pandas as pd
 import pickle
 import os
@@ -60,26 +61,42 @@ def liquidar_fila(row, flag=None):
     tipo = str(row.get("Tipo Procedimiento", "")).upper()
     plan = str(row.get("Plan Beneficios", "")).upper()
     via = str(row.get("Cantidad o Via", ""))
+    # Manejo de diferentes nombres de columna para vía de liquidación
+    if not via or str(via).lower() == 'nan':
+        via = str(row.get("Vía Liquidación", ""))
     uvr = float(row.get("Valor UVR", 0))
     valor = float(row.get("Valor Total", 0))
 
+    # 🏥 ANESTESIOLOGÍA
     if "ANESTESIOLOGIA" in esp:
         base = uvr * VALOR_UVR_ISS_ANESTESIA
         
+        # Incremento por especialista específico
         if especialista.upper() in [a.strip().upper() for a in ANESTESIOLOGOS_CON_INCREMENTO]:
             base *= 1.3
+        
+        # Factor según vía de liquidación
+        factor = 1.0
         if "Multiple - Igual Via Igual Especialista" in via:
-            return base * 0.6
+            factor = 0.6
         elif "Multiple - Diferente Via Igual Especialista" in via:
-            return base * 0.75
-        return base
+            factor = 0.75
+        
+        # 🎯 FLAG: Anestesiología diferencial (60%)
+        if flag == "check_anestesia_diff":
+            factor += 0.6
+        
+        return base * factor
 
+    # 🎯 FLAGS ESPECIALES - Solo los 4 checkboxes solicitados
+    
     # FLAG: Cirujano reconstructivo
     if flag == "check_reconstruc":
         if "RECONSTRUCTIVA" in tipo:
             return 2700000 if "EPS" in plan else 3000000
         base = uvr * VALOR_UVR
-        return base + base * 0.2
+        incremento = base * 0.2
+        return base + incremento
 
     # FLAG: Cirujano de pie y tobillo
     if flag == "check_pie":
@@ -89,66 +106,49 @@ def liquidar_fila(row, flag=None):
             return valor * 0.7
         elif "QUIR" in tipo or "PROCED QX" in tipo or "PROCEDIMIENTOS QUIRURGICOS" in tipo:
             base = uvr * VALOR_UVR
-            return base + base * 0.3
-
-    # FLAG: Socio ortopedista
-    if flag == "check_socio" and "ORTOPEDIA" in esp:
-        if "SOAT" in plan:
-            return valor * 0.7
-        return valor * 0.85
-
-    # Otras reglas especiales por especialidad
-    if "MAXILOFACIAL" in esp:
-        if "INTERCONSULTA" in tipo: return 35000
-        elif "CONSULTA" in tipo: return 29000
+            incremento = base * 0.3
+            return base + incremento
         return valor * 0.7
 
-    if "FISIATRIA" in esp:
-        if "PRIMERA" in tipo: return 59000
-        elif "CONTROL" in tipo: return 51000
-        elif "ARL" in tipo and "JUNTA" in tipo: return 73000
-        elif "JUNTA" in tipo: return 70000
-        elif "TOXINA" in tipo: return 155000
-        elif "INFILTRACION" in tipo: return 76000
-        elif "NO QUIR" in tipo: return valor * 0.7
-
-    if "DOLOR" in esp:
-        if "INTERCONSULTA" in tipo: return 58400
-        elif "MIOFASCIAL" in tipo: return 64500
-        elif "PAQUETE" in tipo: return 350000
-        return valor * 0.7
-
-    if "LABORAL" in esp:
-        if "JUNTA" in tipo: return valor * 0.8
-        return valor * 0.85
-
-    if "NEUROCIRU" in esp:
-        return valor * 0.7 if "SOAT" in plan else valor * 0.8
-
-    if "PEDIATRICA" in esp:
-        if "EPS" in plan: return 70000
-        elif "SOAT" in plan or "POLIZA" in plan: return valor * 0.7
-        elif "YESO" in tipo: return 260000
-        elif "MALFORMACION" in tipo: return 980000
-
-    if "MANO" in esp:
-        if especialista.upper() == "CUELLO DIAZ MARLA KARIN ":
-            return (uvr * VALOR_UVR) * 1.3
-        if "CONSULTA" in tipo: return 30000
-        elif "JUNTA" in tipo or "ESPECIAL" in tipo: return valor * 0.7
-        elif "QUIR" in tipo or "PROCED QX" in tipo or "PROCEDIMIENTOS QUIRURGICOS" in tipo:
-            return (uvr * VALOR_UVR) + (uvr * VALOR_UVR) * 0.3
-
+    # 🦴 ORTOPEDIA
     if "ORTOPEDIA" in esp:
+        # Especialistas con incremento especial
         if especialista.upper() in [o.strip().upper() for o in ORTOPEDISTAS_CON_INCREMENTO]:
             return (uvr * VALOR_UVR) * 1.3
+        
+        # 🎯 FLAG: Socio ortopedista
+        if flag == "check_socio":
+            if "SOAT" in plan:
+                return valor * 0.7
+            return valor * 0.85
+        
+        # Lógica estándar de ortopedia
         if "CONSULTA" in tipo:
             return 27000
         elif "QUIR" in tipo or "PROCED QX" in tipo or "PROCEDIMIENTOS QUIRURGICOS" in tipo:
-            return (uvr * VALOR_UVR) + (uvr * VALOR_UVR) * 0.2
+            base = uvr * VALOR_UVR
+            incremento = base * 0.2
+            return base + incremento
         elif "NO QUIR" in tipo:
             return valor * 0.7
+        
+        return uvr * VALOR_UVR
 
+    # 🖐️ MANO
+    if "MANO" in esp:
+        if especialista.upper() == "CUELLO DIAZ MARLA KARIN ":
+            return (uvr * VALOR_UVR) * 1.3
+        if "CONSULTA" in tipo: 
+            return 30000
+        elif "JUNTA" in tipo or "ESPECIAL" in tipo: 
+            return valor * 0.7
+        elif "QUIR" in tipo or "PROCED QX" in tipo or "PROCEDIMIENTOS QUIRURGICOS" in tipo:
+            base = uvr * VALOR_UVR
+            incremento = base * 0.3
+            return base + incremento
+        return valor * 0.7
+
+    # 🔄 VALOR POR DEFECTO
     return uvr * VALOR_UVR
 
 

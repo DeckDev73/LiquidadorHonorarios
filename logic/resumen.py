@@ -1,9 +1,6 @@
+#resumen.py
 import pandas as pd
-import pickle
-import os
 from logic.liquidacion import liquidar_dataframe
-
-RESUMEN_PATH = os.path.join("uploads", "resumen_estado.pkl")
 
 def obtener_resumen_general(df: pd.DataFrame) -> dict:
     """
@@ -76,16 +73,3 @@ def obtener_resumen_json(df: pd.DataFrame) -> dict:
     """
     resumen = obtener_resumen_general(df)
     return resumen['totales']
-
-def guardar_resumen_como_pickle(resumen_data: dict):
-    """Guarda el resumen como pickle"""
-    os.makedirs(os.path.dirname(RESUMEN_PATH), exist_ok=True)
-    with open(RESUMEN_PATH, 'wb') as f:
-        pickle.dump(resumen_data, f)
-
-def cargar_resumen_desde_pickle():
-    """Carga el resumen desde pickle"""
-    if os.path.exists(RESUMEN_PATH):
-        with open(RESUMEN_PATH, 'rb') as f:
-            return pickle.load(f)
-    return None

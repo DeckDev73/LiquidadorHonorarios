@@ -1,3 +1,4 @@
+//especialistas.js
 document.addEventListener('DOMContentLoaded', function () {
   const rawData = document.getElementById('data-especialistas').textContent;
   const especialistas = JSON.parse(rawData);
