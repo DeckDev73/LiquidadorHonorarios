@@ -3,13 +3,14 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file
 from werkzeug.utils import secure_filename
 import os
+from datetime import datetime 
 from io import BytesIO
 import pandas as pd
 from logic.cargaArchivo import load_excel_file
 from logic.uvr import obtener_codigos_faltantes_uvr, asignar_uvr
 from logic.especialidades import obtener_profesionales_y_especialidades
 from logic.liquidacion import liquidar_dataframe, actualizar_flag_especialista, eliminar_flag_profesional, cargar_flags_por_profesional
-from logic.utils import guardar_estado_como_pickle, cargar_estado_desde_pickle, limpiar_archivos_anteriores
+from logic.utils import guardar_estado_como_pickle, cargar_estado_desde_pickle, limpiar_archivos_anteriores, generar_excel_con_resumen
 from logic.resumen import obtener_resumen_general
 from types import SimpleNamespace
 from flask import jsonify
@@ -246,18 +247,6 @@ def resumen_data():
     return jsonify(resumen)
 
 
-@app.route('/descargar', methods=['GET'])
-def descargar():
-    df = STATE['df']
-    if df is None:
-        flash("No hay datos para exportar.")
-        return redirect(url_for('index'))
-
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False)
-    output.seek(0)
-    return send_file(output, as_attachment=True, download_name="liquidacion.xlsx")
 @app.route('/porcentaje_liquidado', methods=['GET'])
 def obtener_porcentaje_liquidado():
     profesional = request.args.get('profesional')
@@ -285,6 +274,27 @@ def obtener_porcentaje_liquidado():
     porcentaje = round((filas_liquidadas / total_filas) * 100)
 
     return {"porcentaje_liquidado": porcentaje}
+
+
+@app.route('/descargar', methods=['GET'])
+def descargar():
+    df = STATE['df']
+    if df is None:
+        flash("No hay datos para exportar. Actualice Resumen General")
+        return redirect(url_for('index'))
+
+    output = generar_excel_con_resumen(df)
+    
+    # Configurar el nombre del archivo
+    filename = f'liquidacion_honorarios_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+    
+    # Devolver el archivo
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
