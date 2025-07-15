@@ -50,9 +50,9 @@
 $('#codigos').select2({
   placeholder: "Selecciona uno o más códigos",
   width: '100%',
-  closeOnSelect: false, // Mantiene el menú abierto tras seleccionar
+  closeOnSelect: false, // menú abierto 
   allowClear: true,     // Habilita botón para limpiar selección
-  tags: false,          // No permitas etiquetas escritas libremente
+  tags: false,          // No permitas etiquetas 
   templateResult: function (data) {
     // Oculta la opción ya seleccionada en el desplegable
     if ($('#codigos').val() && $('#codigos').val().includes(data.id)) {

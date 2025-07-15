@@ -1,5 +1,4 @@
 #app.py
-
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file
 from werkzeug.utils import secure_filename
 import os
@@ -17,6 +16,7 @@ from flask import jsonify
 
 app = Flask(__name__)
 app.secret_key = 'super-secret-key'
+
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
@@ -36,7 +36,7 @@ def index():
         if df is not None:
             STATE['df'] = df
             STATE['archivo_nombre'] = 'estado.pkl'
-            flash("🧠 Estado restaurado automáticamente: estado.pkl")
+            flash(" Estado restaurado automáticamente: estado.pkl")
 
     df = STATE['df']
     profesionales = obtener_profesionales_y_especialidades(df) if df is not None else {}
@@ -89,7 +89,7 @@ def upload_file():
     filename = secure_filename(file.filename)
     path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(path)
-    flash("✅ Archivo cargado correctamente y anteriores eliminados.")
+    flash("Archivo cargado correctamente y anteriores eliminados.")
     try:
         df = load_excel_file(path)
     except ValueError as e:
@@ -100,31 +100,29 @@ def upload_file():
     STATE['archivo_nombre'] = filename
     guardar_estado_como_pickle(df)
 
-    flash("✅ Archivo cargado correctamente y anteriores eliminados.")
+    flash("Archivo cargado correctamente y anteriores eliminados.")
     return redirect(url_for('index'))
+
 
 @app.route('/eliminar_repetidos', methods=['POST'])
 def eliminar_repetidos():
     df = STATE.get('df')
 
     if df is None:
-        flash("⚠️ No hay datos cargados para limpiar.")
+        flash(" No hay datos cargados para limpiar.")
         return redirect(url_for('index'))
 
-    original_shape = df.shape
+    original = df.shape
 
-    # Eliminar filas duplicadas
     df = df.drop_duplicates()
 
-    # Eliminar columnas duplicadas (columnas con los mismos valores en todas las filas)
-    df = df.loc[:, ~df.T.duplicated()]
 
-    nueva_shape = df.shape
+    nueva = df.shape
 
     STATE['df'] = df
     guardar_estado_como_pickle(df)
 
-    flash(f"🧹 Eliminados duplicados. Dimensiones pasaron de {original_shape} a {nueva_shape}.")
+    flash(f" Eliminados duplicados. Dimensiones pasaron de {original} a {nueva}.")
     return redirect(url_for('index'))
 
 
@@ -135,13 +133,13 @@ def asignar_uvr_route():
     valor_uvr = request.form.get('valor_uvr')
 
     if not codigos:
-        flash("❌ Debes seleccionar al menos un código.")
+        flash(" Debes seleccionar al menos un código.")
         return redirect(url_for('index'))
 
     try:
         valor_uvr = int(valor_uvr)
     except (ValueError, TypeError):
-        flash("❌ Valor UVR inválido.")
+        flash("Valor UVR inválido.")
         return redirect(url_for('index'))
 
     STATE['df'] = asignar_uvr(STATE['df'], codigos, valor_uvr)
@@ -149,11 +147,14 @@ def asignar_uvr_route():
     flash(f"✅ UVR {valor_uvr} asignada a {len(codigos)} código(s).")
     return redirect(url_for('index'))
 
+
+
 @app.route('/uvr_faltantes', methods=['GET'])
 def uvr_faltantes():
     df = STATE.get('df')
     codigos = obtener_codigos_faltantes_uvr(df) if df is not None else []
     return render_template('partials/uvr.html', codigos_faltantes=codigos)
+
 
 
 @app.route('/guardar_flags_liquidacion', methods=['POST'])
